@@ -1,0 +1,421 @@
+<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ПР03 · Борисенко Нікіта</title><style>body{font:16px/1.65 "Segoe UI",Arial,sans-serif;color:#223146;background:#edf1f5;margin:0}main{max-width:1100px;margin:40px auto;background:white;padding:48px;border-radius:12px}h1{font-size:34px;line-height:1.2}h2{border-top:2px solid #dce5ef;margin-top:38px;padding-top:24px;color:#204e78}h3{color:#204e78}table{border-collapse:collapse;width:100%;font-size:14px;margin:18px 0}th,td{border-bottom:1px solid #dce5ef;padding:9px;text-align:left}th{background:#eaf0f6}pre{background:#f0f3f7;padding:20px;white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.5 Consolas,monospace}img{max-width:100%;height:auto}a{color:#1267a5}.lead{font-size:20px}.muted{color:#52657a}figure{margin:24px 0}figcaption{font-size:14px;color:#52657a}@media print{body{background:white}main{margin:0;padding:0}h2{break-after:avoid}figure,table{break-inside:avoid}}</style><main><h1>Практична робота №3</h1><p class="lead">pandas 3.0 і візуалізація: аналітична записка</p><p>Борисенко Нікіта · К-41 · PY-C2Q / PR03-B2P</p>
+<p>Мета: очистити дані, перевірити з'єднання та Copy-on-Write, відтворити метрику ПР01 і відповісти на питання про тривалість фільмів.</p>
+<h2>1. Картка та середовище</h2><p>Параметри наданої індивідуальної картки збережено у <a href="card.json">card.json</a>. Виконання локальне за погодженням; публікація на GitHub — після завантаження власником.</p><pre>{
+  &quot;variant&quot;: &quot;PY-C2Q&quot;,
+  &quot;labVariant&quot;: &quot;PR03-B2P&quot;,
+  &quot;email&quot;: &quot;n.borysenko@istu.edu.ua&quot;,
+  &quot;student&quot;: &quot;N Borysenko&quot;,
+  &quot;course&quot;: &quot;python&quot;,
+  &quot;lab&quot;: &quot;python-lab-03&quot;,
+  &quot;dataset&quot;: &quot;top_100_ukrainian_films.csv&quot;,
+  &quot;base&quot;: {
+    &quot;slice&quot;: {
+      &quot;field&quot;: &quot;year&quot;,
+      &quot;ge&quot;: 1930,
+      &quot;le&quot;: 1969
+    },
+    &quot;filter&quot;: {
+      &quot;field&quot;: &quot;duration_min&quot;,
+      &quot;lt&quot;: 85
+    },
+    &quot;sort&quot;: {
+      &quot;field&quot;: &quot;director&quot;,
+      &quot;direction&quot;: &quot;asc&quot;,
+      &quot;tiebreak&quot;: {
+        &quot;field&quot;: &quot;title&quot;,
+        &quot;direction&quot;: &quot;asc&quot;
+      }
+    },
+    &quot;metric&quot;: {
+      &quot;code&quot;: &quot;mean_duration&quot;,
+      &quot;rounding&quot;: 0.1
+    }
+  },
+  &quot;lab03&quot;: {
+    &quot;derived&quot;: {
+      &quot;column&quot;: &quot;title_words&quot;,
+      &quot;basis&quot;: &quot;кількість слів у title&quot;,
+      &quot;categories&quot;: [
+        {
+          &quot;when&quot;: &quot;1 слово&quot;,
+          &quot;value&quot;: &quot;одне слово&quot;
+        },
+        {
+          &quot;when&quot;: &quot;2 слова&quot;,
+          &quot;value&quot;: &quot;два слова&quot;
+        },
+        {
+          &quot;when&quot;: &quot;3 і більше слів&quot;,
+          &quot;value&quot;: &quot;три і більше&quot;
+        }
+      ]
+    },
+    &quot;bins&quot;: {
+      &quot;column&quot;: &quot;duration_class&quot;,
+      &quot;source&quot;: &quot;duration_min&quot;,
+      &quot;edges&quot;: [
+        0,
+        80,
+        100,
+        400
+      ],
+      &quot;labels&quot;: [
+        &quot;до 80 хв&quot;,
+        &quot;80–100 хв&quot;,
+        &quot;понад 100 хв&quot;
+      ],
+      &quot;note&quot;: &quot;Права межа включена&quot;
+    },
+    &quot;groupby&quot;: {
+      &quot;by&quot;: &quot;decade&quot;,
+      &quot;aggregates&quot;: [
+        &quot;кількість фільмів&quot;,
+        &quot;медіанна тривалість, хв&quot;,
+        &quot;максимальна тривалість, хв&quot;
+      ],
+      &quot;sort&quot;: &quot;за першим агрегатом, спадання&quot;
+    },
+    &quot;charts&quot;: {
+      &quot;matplotlib&quot;: [
+        {
+          &quot;kind&quot;: &quot;barh&quot;,
+          &quot;shows&quot;: &quot;перші 10 груп за кількістю фільмів&quot;
+        },
+        {
+          &quot;kind&quot;: &quot;hist&quot;,
+          &quot;shows&quot;: &quot;розподіл duration_min&quot;
+        }
+      ],
+      &quot;seaborn&quot;: [
+        {
+          &quot;kind&quot;: &quot;countplot&quot;,
+          &quot;shows&quot;: &quot;кількість фільмів за title_words&quot;
+        }
+      ]
+    },
+    &quot;question&quot;: {
+      &quot;text&quot;: &quot;Чи фільми, зняті до 1970 року, коротші за пізніші — і на скільки хвилин?&quot;,
+      &quot;answer&quot;: &quot;різниця медіан у хвилинах&quot;
+    }
+  }
+}</pre><h3>Версії встановлених бібліотек</h3><pre>{
+  &quot;pandas&quot;: &quot;3.0.6&quot;,
+  &quot;pyarrow&quot;: &quot;25.0.1&quot;,
+  &quot;matplotlib&quot;: &quot;3.11.2&quot;,
+  &quot;seaborn&quot;: &quot;0.13.2&quot;,
+  &quot;plotly&quot;: &quot;7.1.0&quot;
+}</pre>
+<p>У проєкті немає підсумкового об'єднаного датасету ПР02, тому використано дозволений завданням запасний набір: локальну копію базового CSV зі 100 українськими фільмами. Рядків API та скрапінгу немає. Дані й посилання на сторінки фільмів містяться у <a href="data/top_100_ukrainian_films.csv">вхідному CSV</a>.</p>
+<h2>2. Перший погляд і проблеми</h2><pre>&lt;class &#x27;pandas.DataFrame&#x27;&gt;
+RangeIndex: 100 entries, 0 to 99
+Data columns (total 6 columns):
+ #   Column        Non-Null Count  Dtype
+---  ------        --------------  -----
+ 0   title         100 non-null    str  
+ 1   year          100 non-null    str  
+ 2   director      100 non-null    str  
+ 3   duration_min  100 non-null    str  
+ 4   link          100 non-null    str  
+ 5   source        100 non-null    str  
+dtypes: str(6)
+memory usage: 16.8 KB
+</pre><p>Знайдено 6 колонок типу str; object-колонок — 0. До числового перетворення частка формальних пропусків у кожній колонці — 0, але «н/д» у 6 рядках приховує відсутню тривалість.</p><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>title</th>
+      <th>year</th>
+      <th>duration_min</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Шкурник</td>
+      <td>1929</td>
+      <td>78</td>
+    </tr>
+    <tr>
+      <td>Прометей</td>
+      <td>1935</td>
+      <td>88</td>
+    </tr>
+    <tr>
+      <td>Бумбараш</td>
+      <td>1971</td>
+      <td>н/д</td>
+    </tr>
+    <tr>
+      <td>Припутні</td>
+      <td>2017</td>
+      <td>89</td>
+    </tr>
+    <tr>
+      <td>Я та інші</td>
+      <td>1971</td>
+      <td>48</td>
+    </tr>
+  </tbody>
+</table><pre>           title  year       director duration_min                                           link source
+count        100   100            100          100                                            100    100
+unique       100    50             66           62                                            100      1
+top     Аероград  1929  Кіра Муратова          н/д  https://dovzhenkocentre.org/top-100/aerohrad/  films
+freq           1     6              7            6                                              1    100</pre>
+<ul><li>Рік і тривалість мають текстовий тип — потрібне явне перетворення.</li><li>Шість «н/д» потрібно зберегти як пропуски, а не замінювати середнім.</li><li>Перевірка дублікатів потрібна за змістовим ключем title + year.</li><li>Короткі фільми не обов'язково є помилками: набір включає короткометражки.</li></ul>
+<h2>3. Очищення та merge</h2><ol><li>Типи: to_numeric(errors="coerce") та Int64, щоб зберегти цілі числа й пропуски.</li><li>Пропуски: видалення лише записів без назви або року. Невідому тривалість залишено.</li><li>Дублікати: повних — 0, за title + year — 0; keep="first" зберігає перший запис.</li><li>Аномалії: 7 фільмів поза [40; 300] хв — короткометражки 7–20 хв; їх залишено. Межі IQR: 26,875–141,875 хв, за ними 11 викидів.</li></ol><p>Очищення: 100 → 100 рядків, втрачено 0. Після перетворення невідома тривалість у 6 фільмів.</p><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>title</th>
+      <th>year</th>
+      <th>duration_min</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Біосфера! Час усвідомлення</td>
+      <td>1974</td>
+      <td>16</td>
+    </tr>
+    <tr>
+      <td>Засипле сніг дороги…</td>
+      <td>2004</td>
+      <td>7</td>
+    </tr>
+    <tr>
+      <td>Йшов трамвай №9</td>
+      <td>2002</td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <td>Лист до Америки</td>
+      <td>1999</td>
+      <td>20</td>
+    </tr>
+    <tr>
+      <td>Подорожні</td>
+      <td>2005</td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <td>Сергій Параджанов. Відвідини</td>
+      <td>1994</td>
+      <td>12</td>
+    </tr>
+    <tr>
+      <td>Та, що входить у море</td>
+      <td>1965</td>
+      <td>15</td>
+    </tr>
+  </tbody>
+</table>
+<p>Додано decade = year // 10 * 10 та hours = duration_min / 60 (округлення до 2 знаків). Left merge з validate="m:1" зберігає всі фільми та перевіряє унікальність ключа довідника.</p><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>before</th>
+      <th>after</th>
+      <th>left_only</th>
+      <th>missing_era</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>100</td>
+      <td>100</td>
+      <td>32</td>
+      <td>32</td>
+    </tr>
+  </tbody>
+</table><p>32 ключі не зіставилися: 2000-ті — 8, 2010-ті — 23, 2020-ті — 1. Отримано 32 нових пропуски era; вони явно заповнені «двотисячні й пізніше». Inner merge втратив би ці рядки.</p>
+<h2>4. Copy-on-Write та кирилиця</h2><p>Попередження ChainedAssignmentError перетворено на виняток. Нижче справжній трейсбек виконання:</p><pre>Traceback (most recent call last):
+  File &quot;D:\програмування алгоритив\lab-03\work-03\main.py&quot;, line 83, in chained_assignment_demo
+    demo[demo.duration_min &gt; 100][&quot;mitka&quot;] = &quot;довгий&quot;
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File &quot;C:\Users\ApqA\AppData\Local\Programs\Python\Python312\Lib\site-packages\pandas\core\frame.py&quot;, line 4646, in __setitem__
+    warnings.warn(
+pandas.errors.ChainedAssignmentError: A value is being set on a copy of a DataFrame or Series through chained assignment.
+Such chained assignment never works to update the original DataFrame or Series, because the intermediate object on which we are setting values always behaves as a copy (due to Copy-on-Write).
+
+Try using &#x27;.loc[row_indexer, col_indexer] = value&#x27; instead, to perform the assignment in a single step.
+
+See the documentation for a more detailed explanation: https://pandas.pydata.org/pandas-docs/stable/user_guide/copy_on_write.html#chained-assignment
+</pre><p>Виправлення однією операцією індексації; мітку отримав 21 фільм:</p><pre>demo.loc[demo.duration_min &gt; 100, &quot;mitka&quot;] = &quot;довгий&quot;</pre><figure><img src="results/grafiky/cyrillic.png" alt="Тест кирилиці, відтворений matplotlib; DejaVu Sans підтримує всі символи тесту."><figcaption>Тест кирилиці, відтворений matplotlib; DejaVu Sans підтримує всі символи тесту.</figcaption></figure><figure><img src="results/grafiky/classroom.png" alt="Аудиторний графік: медіани за десятиліттями, кількість спостережень біля кожної точки."><figcaption>Аудиторний графік: медіани за десятиліттями, кількість спостережень біля кожної точки.</figcaption></figure>
+<h2>5. Звітний зріз і порівняння з ПР01</h2><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Після slice</th>
+      <th>Після filter</th>
+      <th>Середнє, хв</th>
+      <th>ПР01, хв</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>26</td>
+      <td>17</td>
+      <td>72.4</td>
+      <td>72.4</td>
+    </tr>
+  </tbody>
+</table><p>1930 ≤ year ≤ 1969; duration_min &lt; 85; сортування director, title за зростанням. Середнє 72,4 хв і перші п'ять назв збіглися з незалежним повторенням алгоритму ПР01 на списку словників.</p><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>title</th>
+      <th>year</th>
+      <th>director</th>
+      <th>duration_min</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Коліївщина</td>
+      <td>1933</td>
+      <td>Іван Кавалерідзе</td>
+      <td>84</td>
+    </tr>
+    <tr>
+      <td>З нудьги</td>
+      <td>1967</td>
+      <td>Артур Войтецький</td>
+      <td>78</td>
+    </tr>
+    <tr>
+      <td>Совість</td>
+      <td>1968</td>
+      <td>Володимир Денисенко</td>
+      <td>80</td>
+    </tr>
+    <tr>
+      <td>Сон</td>
+      <td>1964</td>
+      <td>Володимир Денисенко</td>
+      <td>80</td>
+    </tr>
+    <tr>
+      <td>За двома зайцями</td>
+      <td>1961</td>
+      <td>Віктор Іванов</td>
+      <td>77</td>
+    </tr>
+  </tbody>
+</table>
+<h2>6. Похідні колонки та групування</h2><p>Обидві колонки побудовано на повному очищеному наборі зі 100 фільмів. title_words визначається кількістю слів після split: 1, 2 або ≥3. duration_class використовує правозамкнені інтервали (0;80], (80;100], (100;400]. Значення 80 належить першій групі, 100 — другій. Шість невідомих тривалостей не отримали категорії.</p><pre>words = films.title.str.split().str.len()
+films[&quot;title_words&quot;] = pd.cut(words, [0, 1, 2, float(&quot;inf&quot;)], labels=[&quot;одне слово&quot;, &quot;два слова&quot;, &quot;три і більше&quot;])
+films[&quot;duration_class&quot;] = pd.cut(films.duration_min, [0, 80, 100, 400], labels=[&quot;до 80 хв&quot;, &quot;80–100 хв&quot;, &quot;понад 100 хв&quot;])</pre><pre>{
+  &quot;title_words&quot;: {
+    &quot;одне слово&quot;: 32,
+    &quot;два слова&quot;: 33,
+    &quot;три і більше&quot;: 35
+  },
+  &quot;duration_class&quot;: {
+    &quot;до 80 хв&quot;: 44,
+    &quot;80–100 хв&quot;: 29,
+    &quot;понад 100 хв&quot;: 21,
+    &quot;nan&quot;: 6
+  }
+}</pre><p>Агрегати у порядку картки: кількість, медіана, максимум. Сортування за кількістю за спаданням; при нічиїй збережено початковий порядок десятиліть.</p><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Десятиліття</th>
+      <th>Кількість фільмів</th>
+      <th>Медіана, хв</th>
+      <th>Максимум, хв</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2010</td>
+      <td>23</td>
+      <td>96.0</td>
+      <td>143</td>
+    </tr>
+    <tr>
+      <td>1960</td>
+      <td>15</td>
+      <td>80.0</td>
+      <td>138</td>
+    </tr>
+    <tr>
+      <td>1990</td>
+      <td>14</td>
+      <td>85.0</td>
+      <td>132</td>
+    </tr>
+    <tr>
+      <td>1920</td>
+      <td>10</td>
+      <td>71.0</td>
+      <td>93</td>
+    </tr>
+    <tr>
+      <td>1970</td>
+      <td>10</td>
+      <td>90.0</td>
+      <td>130</td>
+    </tr>
+    <tr>
+      <td>1930</td>
+      <td>8</td>
+      <td>80.0</td>
+      <td>100</td>
+    </tr>
+    <tr>
+      <td>1980</td>
+      <td>8</td>
+      <td>87.0</td>
+      <td>157</td>
+    </tr>
+    <tr>
+      <td>2000</td>
+      <td>8</td>
+      <td>86.0</td>
+      <td>155</td>
+    </tr>
+    <tr>
+      <td>1950</td>
+      <td>2</td>
+      <td>96.0</td>
+      <td>98</td>
+    </tr>
+    <tr>
+      <td>1940</td>
+      <td>1</td>
+      <td>93.0</td>
+      <td>93</td>
+    </tr>
+    <tr>
+      <td>2020</td>
+      <td>1</td>
+      <td>74.0</td>
+      <td>74</td>
+    </tr>
+  </tbody>
+</table><p>Найбільше представлені 2010-ті: 23 фільми; кількість важлива для оцінювання надійності групових показників.</p>
+<h2>7. Графіки</h2><figure><img src="results/grafiky/01-decades.png" alt="Графік 1. Перші 10 груп groupby за кількістю; 2020-ті залишаються у повній таблиці."><figcaption>Графік 1. Перші 10 груп groupby за кількістю; 2020-ті залишаються у повній таблиці.</figcaption></figure><figure><img src="results/grafiky/02-duration.png" alt="Графік 2. Гістограма 94 відомих тривалостей; шість пропусків не входять у розподіл."><figcaption>Графік 2. Гістограма 94 відомих тривалостей; шість пропусків не входять у розподіл.</figcaption></figure><figure><img src="results/grafiky/03-title-words.png" alt="Графік 3. Seaborn countplot для title_words, N=100."><figcaption>Графік 3. Seaborn countplot для title_words, N=100.</figcaption></figure><figure><img src="results/grafiky/04-interactive.png" alt="Графік 4. Знімок локального інтерактивного Plotly-графіка."><figcaption>Графік 4. Знімок локального інтерактивного Plotly-графіка.</figcaption></figure><p><a href="results/grafiky/04-interactive.html">Відкрити інтерактивний графік</a>: наведення показує назву, режисера, рік і тривалість. Файл працює без інтернету.</p>
+<h2>8. Аналітична записка</h2><p class="lead">Так, у цьому наборі фільми до 1970 року коротші за пізніші на 11 хв за медіаною: 79 проти 90 хв.</p><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Період</th>
+      <th>Усього</th>
+      <th>Відома тривалість</th>
+      <th>Пропуски</th>
+      <th>Медіана, хв</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>до 1970</td>
+      <td>36</td>
+      <td>36</td>
+      <td>0</td>
+      <td>79.0</td>
+    </tr>
+    <tr>
+      <td>від 1970</td>
+      <td>64</td>
+      <td>58</td>
+      <td>6</td>
+      <td>90.0</td>
+    </tr>
+  </tbody>
+</table><p>Різницю обчислено за 36 ранніми та 58 пізнішими фільмами з відомою тривалістю. Це опис вибраного топ-100, а не оцінка всього українського кінематографа чи доказ причинного впливу року.</p><ol><li>Графік 1: 2010-ті мають 23 фільми зі 100, що на 8 більше за 1960-ті (15).</li><li>Графік 2: медіана тривалості дорівнює 82,5 хв серед 94 відомих значень.</li><li>Графік 3: 35 назв мають щонайменше три слова, 33 — два, 32 — одне; найбільша категорія не становить більшості.</li><li>Графік 4: 7 зі 94 фільмів із відомою тривалістю коротші за 40 хв (7,4%); найкоротший — «Засипле сніг дороги…», 7 хв, 2004 рік.</li></ol>
+<h2>9. Відтворення й висновки</h2><pre>python -m pip install -r requirements.txt
+python main.py</pre><p><a href="main.py">Повний код</a> · <a href="results/cleaned_films.csv">Очищений CSV</a> · <a href="results/cleaned_films.parquet">Parquet</a> · <a href="results/summary.json">Числові результати</a></p><p>Очищення зберегло всі 100 записів та виявило 6 невідомих тривалостей. Перевірки merge запобігли втраті 32 сучасних фільмів. Метрика звітного зрізу відтворила результат ПР01 — 72,4 хв. Медіанна тривалість ранніх фільмів у наборі на 11 хв менша, але вибірка не репрезентує все українське кіно.</p>
+<h2>10. Використання ШІ для звіту</h2><p>Для підготовки тексту та HTML-оформлення звіту використано ChatGPT (Codex). Числа наведено за результатами локального запуску програми.</p></main></html>

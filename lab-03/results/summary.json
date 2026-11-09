@@ -1,0 +1,198 @@
+{
+  "variant": "PY-C2Q",
+  "labVariant": "PR03-B2P",
+  "source": "top_100_ukrainian_films.csv",
+  "versions": {
+    "pandas": "3.0.6",
+    "pyarrow": "25.0.1",
+    "matplotlib": "3.11.2",
+    "seaborn": "0.13.2",
+    "plotly": "7.1.0"
+  },
+  "first_look": {
+    "shape": [
+      100,
+      6
+    ],
+    "info": "<class 'pandas.DataFrame'>\nRangeIndex: 100 entries, 0 to 99\nData columns (total 6 columns):\n #   Column        Non-Null Count  Dtype\n---  ------        --------------  -----\n 0   title         100 non-null    str  \n 1   year          100 non-null    str  \n 2   director      100 non-null    str  \n 3   duration_min  100 non-null    str  \n 4   link          100 non-null    str  \n 5   source        100 non-null    str  \ndtypes: str(6)\nmemory usage: 16.8 KB\n",
+    "dtypes": {
+      "title": "str",
+      "year": "str",
+      "director": "str",
+      "duration_min": "str",
+      "link": "str",
+      "source": "str"
+    },
+    "string_columns": [
+      "title",
+      "year",
+      "director",
+      "duration_min",
+      "link",
+      "source"
+    ],
+    "object_columns": [],
+    "sample": [
+      {
+        "title": "Шкурник",
+        "year": "1929",
+        "director": "Микола Шпиковський",
+        "duration_min": "78",
+        "link": "https://dovzhenkocentre.org/top-100/shkurnyk-tsybala-znayome-oblychchya/",
+        "source": "films"
+      },
+      {
+        "title": "Прометей",
+        "year": "1935",
+        "director": "Іван Кавалерідзе",
+        "duration_min": "88",
+        "link": "https://dovzhenkocentre.org/top-100/prometey/",
+        "source": "films"
+      },
+      {
+        "title": "Бумбараш",
+        "year": "1971",
+        "director": "Микола Рашеєв, Абрам Народицький",
+        "duration_min": "н/д",
+        "link": "https://dovzhenkocentre.org/top-100/bumbarash/",
+        "source": "films"
+      },
+      {
+        "title": "Припутні",
+        "year": "2017",
+        "director": "Аркадій Непиталюк",
+        "duration_min": "89",
+        "link": "https://dovzhenkocentre.org/top-100/pryputni/",
+        "source": "films"
+      },
+      {
+        "title": "Я та інші",
+        "year": "1971",
+        "director": "Фелікс Соболєв",
+        "duration_min": "48",
+        "link": "https://dovzhenkocentre.org/top-100/ya-ta-inshi/",
+        "source": "films"
+      }
+    ],
+    "describe": "           title  year       director duration_min                                           link source\ncount        100   100            100          100                                            100    100\nunique       100    50             66           62                                            100      1\ntop     Аероград  1929  Кіра Муратова          н/д  https://dovzhenkocentre.org/top-100/aerohrad/  films\nfreq           1     6              7            6                                              1    100",
+    "missing_fraction": {
+      "title": 0.0,
+      "year": 0.0,
+      "director": 0.0,
+      "duration_min": 0.0,
+      "link": 0.0,
+      "source": 0.0
+    },
+    "sources": {
+      "films": 100
+    }
+  },
+  "cleaning": {
+    "before": 100,
+    "missing_duration": 6,
+    "after_dropna": 100,
+    "full_duplicates": 0,
+    "semantic_duplicates": 0,
+    "after": 100,
+    "suspicious": [
+      {
+        "title": "Біосфера! Час усвідомлення",
+        "year": 1974,
+        "director": "Фелікс Соболєв",
+        "duration_min": 16,
+        "link": "https://dovzhenkocentre.org/top-100/biosfera-chas-usvidomlennya/"
+      },
+      {
+        "title": "Засипле сніг дороги…",
+        "year": 2004,
+        "director": "Євген Сивокінь",
+        "duration_min": 7,
+        "link": "https://dovzhenkocentre.org/top-100/zasyple-snih-dorohy/"
+      },
+      {
+        "title": "Йшов трамвай №9",
+        "year": 2002,
+        "director": "Степан Коваль",
+        "duration_min": 10,
+        "link": "https://dovzhenkocentre.org/top-100/yshov-tramvay-9/"
+      },
+      {
+        "title": "Лист до Америки",
+        "year": 1999,
+        "director": "Кіра Муратова",
+        "duration_min": 20,
+        "link": "https://dovzhenkocentre.org/top-100/lyst-do-ameryky/"
+      },
+      {
+        "title": "Подорожні",
+        "year": 2005,
+        "director": "Ігор Стрембіцький",
+        "duration_min": 10,
+        "link": "https://dovzhenkocentre.org/top-100/podorozhni/"
+      },
+      {
+        "title": "Сергій Параджанов. Відвідини",
+        "year": 1994,
+        "director": "Анатолій Сирих",
+        "duration_min": 12,
+        "link": "https://dovzhenkocentre.org/top-100/serhiy-paradzhanov-vidvidyny/"
+      },
+      {
+        "title": "Та, що входить у море",
+        "year": 1965,
+        "director": "Леонід Осика",
+        "duration_min": 15,
+        "link": "https://dovzhenkocentre.org/top-100/ta-scho-vhodyt-u-more/"
+      }
+    ],
+    "iqr": {
+      "lower": 26.875,
+      "upper": 141.875,
+      "count": 11
+    }
+  },
+  "merge": {
+    "before": 100,
+    "after": 100,
+    "left_only": 32,
+    "missing_era": 32
+  },
+  "marked_long": 21,
+  "slice_count": 26,
+  "filter_count": 17,
+  "metric": 72.4,
+  "pr01_metric": 72.4,
+  "pr01_match": true,
+  "first_five_match": true,
+  "categories": {
+    "title_words": {
+      "одне слово": 32,
+      "два слова": 33,
+      "три і більше": 35
+    },
+    "duration_class": {
+      "до 80 хв": 44,
+      "80–100 хв": 29,
+      "понад 100 хв": 21,
+      "nan": 6
+    }
+  },
+  "periods": [
+    {
+      "period": "до 1970",
+      "all": 36,
+      "known": 36,
+      "missing": 0,
+      "median": 79.0
+    },
+    {
+      "period": "від 1970",
+      "all": 64,
+      "known": 58,
+      "missing": 6,
+      "median": 90.0
+    }
+  ],
+  "median_difference": 11.0,
+  "overall_median": 82.5
+}

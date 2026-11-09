@@ -1,0 +1,99 @@
+{
+  "variant": "PY-C2Q",
+  "labVariant": "PR03-B2P",
+  "email": "n.borysenko@istu.edu.ua",
+  "student": "N Borysenko",
+  "course": "python",
+  "lab": "python-lab-03",
+  "dataset": "top_100_ukrainian_films.csv",
+  "base": {
+    "slice": {
+      "field": "year",
+      "ge": 1930,
+      "le": 1969
+    },
+    "filter": {
+      "field": "duration_min",
+      "lt": 85
+    },
+    "sort": {
+      "field": "director",
+      "direction": "asc",
+      "tiebreak": {
+        "field": "title",
+        "direction": "asc"
+      }
+    },
+    "metric": {
+      "code": "mean_duration",
+      "rounding": 0.1
+    }
+  },
+  "lab03": {
+    "derived": {
+      "column": "title_words",
+      "basis": "кількість слів у title",
+      "categories": [
+        {
+          "when": "1 слово",
+          "value": "одне слово"
+        },
+        {
+          "when": "2 слова",
+          "value": "два слова"
+        },
+        {
+          "when": "3 і більше слів",
+          "value": "три і більше"
+        }
+      ]
+    },
+    "bins": {
+      "column": "duration_class",
+      "source": "duration_min",
+      "edges": [
+        0,
+        80,
+        100,
+        400
+      ],
+      "labels": [
+        "до 80 хв",
+        "80–100 хв",
+        "понад 100 хв"
+      ],
+      "note": "Права межа включена"
+    },
+    "groupby": {
+      "by": "decade",
+      "aggregates": [
+        "кількість фільмів",
+        "медіанна тривалість, хв",
+        "максимальна тривалість, хв"
+      ],
+      "sort": "за першим агрегатом, спадання"
+    },
+    "charts": {
+      "matplotlib": [
+        {
+          "kind": "barh",
+          "shows": "перші 10 груп за кількістю фільмів"
+        },
+        {
+          "kind": "hist",
+          "shows": "розподіл duration_min"
+        }
+      ],
+      "seaborn": [
+        {
+          "kind": "countplot",
+          "shows": "кількість фільмів за title_words"
+        }
+      ]
+    },
+    "question": {
+      "text": "Чи фільми, зняті до 1970 року, коротші за пізніші — і на скільки хвилин?",
+      "answer": "різниця медіан у хвилинах"
+    }
+  }
+}
