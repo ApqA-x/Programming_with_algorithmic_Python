@@ -1,0 +1,92 @@
+{
+  "variant": "PY-C2Q",
+  "labVariant": "PR05-C5U",
+  "email": "n.borysenko@istu.edu.ua",
+  "student": "N Borysenko",
+  "course": "python",
+  "lab": "python-lab-05",
+  "base": {
+    "slice": {
+      "field": "year",
+      "ge": 1930,
+      "le": 1969
+    },
+    "filter": {
+      "field": "duration_min",
+      "lt": 85
+    },
+    "sort": {
+      "field": "director",
+      "direction": "asc",
+      "tiebreak": {
+        "field": "title",
+        "direction": "asc"
+      }
+    },
+    "metric": {
+      "code": "mean_duration",
+      "rounding": 0.1
+    }
+  },
+  "lab05": {
+    "layout": {
+      "rule": "за першою літерою імені файлу",
+      "kind": "letter",
+      "folders": {
+        "pattern": "велика перша літера імені",
+        "digits": "0-9",
+        "fallback": "other — якщо перший символ не літера й не цифра"
+      },
+      "extensions": [
+        ".jpg",
+        ".png",
+        ".csv",
+        ".txt"
+      ],
+      "note": "правило задає лише теку призначення — імена файлів не змінюються"
+    },
+    "thumbs": {
+      "box": [
+        200,
+        200
+      ],
+      "format": "JPEG",
+      "quality": 90,
+      "note": "вписати у квадрат зі збереженням пропорцій; окрема тека призначення"
+    },
+    "watermark": {
+      "text": "© PY-C2Q · 2026",
+      "position": "по центру кадру",
+      "anchor": "center",
+      "note": "кегль — ширина кадру // 20, не менший за 12 px; альфа ≈ 140; відступ 12 px"
+    },
+    "excel": {
+      "sheets": [
+        {
+          "name": "Файли",
+          "columns": [
+            "Ім'я файлу",
+            "Розширення",
+            "Розмір, КіБ",
+            "Тека призначення"
+          ]
+        },
+        {
+          "name": "Дублікати",
+          "columns": [
+            "Хеш (перші 8 символів)",
+            "Копій",
+            "Марно займають, КіБ"
+          ]
+        }
+      ],
+      "formula": {
+        "function": "AVERAGE",
+        "column": "Розмір, КіБ",
+        "text": "середній розмір файлу",
+        "sheet": "Файли"
+      },
+      "note": "openpyxl формул не обчислює — він записує лише їхній текст"
+    }
+  }
+}

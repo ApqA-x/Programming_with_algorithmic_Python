@@ -1,0 +1,236 @@
+{
+  "variant": "PY-C2Q",
+  "labVariant": "PR05-C5U",
+  "total_files": 23,
+  "selected_files": 17,
+  "hashed_files": 9,
+  "duplicates": [
+    {
+      "hash": "908f11859815a3dac80239a0056997469980a798bc5905ebdca5ede97d49b64a",
+      "files": [
+        "camera/IMG_0002 (1).jpg",
+        "camera/IMG_0002.jpg",
+        "kopiya_foto.jpg"
+      ],
+      "wasted_kib": 133.951171875
+    },
+    {
+      "hash": "d5ec4d6aed206ab8373b58dd02360e99f23c0486cbb445e2ef8a191aa2f42837",
+      "files": [
+        "docs/notes_final.txt",
+        "notes.txt"
+      ],
+      "wasted_kib": 0.0458984375
+    }
+  ],
+  "organize": {
+    "copied": 17,
+    "skipped": 0,
+    "planned": 0,
+    "conflicts": 0,
+    "failed": 0
+  },
+  "images": {
+    "done": 14,
+    "skipped": 0,
+    "failed": 0
+  },
+  "image_rows": [
+    {
+      "source": "camera/IMG_0001.jpg",
+      "before": [
+        1600,
+        1000
+      ],
+      "after": [
+        200,
+        125
+      ],
+      "bytes": 3540
+    },
+    {
+      "source": "camera/IMG_0002 (1).jpg",
+      "before": [
+        1200,
+        1600
+      ],
+      "after": [
+        150,
+        200
+      ],
+      "bytes": 3836
+    },
+    {
+      "source": "camera/IMG_0002.jpg",
+      "before": [
+        1200,
+        1600
+      ],
+      "after": [
+        150,
+        200
+      ],
+      "bytes": 3836
+    },
+    {
+      "source": "camera/IMG_0003.jpg",
+      "before": [
+        2000,
+        1200
+      ],
+      "after": [
+        200,
+        120
+      ],
+      "bytes": 3514
+    },
+    {
+      "source": "camera/IMG_0004.jpg",
+      "before": [
+        900,
+        900
+      ],
+      "after": [
+        200,
+        200
+      ],
+      "bytes": 4437
+    },
+    {
+      "source": "camera/IMG_0005.jpg",
+      "before": [
+        1400,
+        800
+      ],
+      "after": [
+        200,
+        114
+      ],
+      "bytes": 3516
+    },
+    {
+      "source": "camera/IMG_0006.jpg",
+      "before": [
+        1000,
+        1500
+      ],
+      "after": [
+        133,
+        200
+      ],
+      "bytes": 3601
+    },
+    {
+      "source": "camera/photo_exif.jpg",
+      "before": [
+        1200,
+        900
+      ],
+      "after": [
+        200,
+        150
+      ],
+      "bytes": 3987
+    },
+    {
+      "source": "chart_01.png",
+      "before": [
+        800,
+        500
+      ],
+      "after": [
+        200,
+        125
+      ],
+      "bytes": 3545
+    },
+    {
+      "source": "chart_02.png",
+      "before": [
+        800,
+        500
+      ],
+      "after": [
+        200,
+        125
+      ],
+      "bytes": 3529
+    },
+    {
+      "source": "chart_03.png",
+      "before": [
+        800,
+        500
+      ],
+      "after": [
+        200,
+        125
+      ],
+      "bytes": 3514
+    },
+    {
+      "source": "docs/scan_01.webp",
+      "before": [
+        1100,
+        700
+      ],
+      "after": [
+        200,
+        127
+      ],
+      "bytes": 3752
+    },
+    {
+      "source": "docs/scan_02.webp",
+      "before": [
+        1100,
+        700
+      ],
+      "after": [
+        200,
+        127
+      ],
+      "bytes": 3749
+    },
+    {
+      "source": "kopiya_foto.jpg",
+      "before": [
+        1200,
+        1600
+      ],
+      "after": [
+        150,
+        200
+      ],
+      "bytes": 3836
+    }
+  ],
+  "exif": {
+    "before": 6,
+    "tags": {
+      "GPSInfo": "142",
+      "Make": "ISTU",
+      "Model": "Colab Phone X",
+      "Software": "pr05-generator",
+      "Orientation": "1",
+      "DateTime": "2026:03:14 09:15:00"
+    },
+    "gps_present": true,
+    "gps_tags": {
+      "GPSLatitudeRef": "N",
+      "GPSLatitude": "(50.0, 27.0, 12.0)",
+      "GPSLongitudeRef": "E",
+      "GPSLongitude": "(30.0, 31.0, 24.0)"
+    },
+    "latitude": 50.45333333333333,
+    "longitude": 30.523333333333333,
+    "map_url": "https://www.google.com/maps?q=50.4533333,30.5233333",
+    "after": 0
+  },
+  "excel": {
+    "rows": 17,
+    "formula_cell": "C19",
+    "formula": "=AVERAGE(C2:C18)",
+    "python_average_kib": 31.558421415441178
+  }
+}

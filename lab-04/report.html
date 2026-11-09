@@ -1,0 +1,596 @@
+<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ПР05 · Борисенко Нікіта</title><style>body{font:16px/1.65 "Segoe UI",Arial,sans-serif;color:#223146;background:#edf1f5;margin:0}main{max-width:1100px;margin:40px auto;background:white;padding:48px;border-radius:12px}h1{font-size:34px;line-height:1.2}h2{border-top:2px solid #dce5ef;margin-top:38px;padding-top:24px;color:#204e78}h3{color:#204e78}table{border-collapse:collapse;width:100%;font-size:14px;margin:18px 0}th,td{border-bottom:1px solid #dce5ef;padding:9px;text-align:left}th{background:#eaf0f6}pre{background:#f0f3f7;padding:20px;white-space:pre-wrap;overflow-wrap:anywhere;font:13px/1.5 Consolas,monospace}img{max-width:100%;height:auto}a{color:#1267a5}.lead{font-size:20px}.muted{color:#52657a}figure{margin:24px 0}figcaption{font-size:14px;color:#52657a}@media print{body{background:white}main{margin:0;padding:0}h2{break-after:avoid}figure,table{break-inside:avoid}}</style><main><h1>Лабораторна робота №4</h1><p class="lead">Практичне 05: автоматизація файлів і зображень</p><p>Борисенко Нікіта · К-41 · PY-C2Q / PR05-C5U</p><p>Виконано завдання «Практичне 05» з PDF у теці lab-04. Мета: створити безпечну консольну програму, довести ідемпотентність, обробити зображення, дослідити EXIF і сформувати книгу Excel.</p>
+<h2>1. Картка та середовище</h2><pre>{
+  &quot;variant&quot;: &quot;PY-C2Q&quot;,
+  &quot;labVariant&quot;: &quot;PR05-C5U&quot;,
+  &quot;email&quot;: &quot;n.borysenko@istu.edu.ua&quot;,
+  &quot;student&quot;: &quot;N Borysenko&quot;,
+  &quot;course&quot;: &quot;python&quot;,
+  &quot;lab&quot;: &quot;python-lab-05&quot;,
+  &quot;base&quot;: {
+    &quot;slice&quot;: {
+      &quot;field&quot;: &quot;year&quot;,
+      &quot;ge&quot;: 1930,
+      &quot;le&quot;: 1969
+    },
+    &quot;filter&quot;: {
+      &quot;field&quot;: &quot;duration_min&quot;,
+      &quot;lt&quot;: 85
+    },
+    &quot;sort&quot;: {
+      &quot;field&quot;: &quot;director&quot;,
+      &quot;direction&quot;: &quot;asc&quot;,
+      &quot;tiebreak&quot;: {
+        &quot;field&quot;: &quot;title&quot;,
+        &quot;direction&quot;: &quot;asc&quot;
+      }
+    },
+    &quot;metric&quot;: {
+      &quot;code&quot;: &quot;mean_duration&quot;,
+      &quot;rounding&quot;: 0.1
+    }
+  },
+  &quot;lab05&quot;: {
+    &quot;layout&quot;: {
+      &quot;rule&quot;: &quot;за першою літерою імені файлу&quot;,
+      &quot;kind&quot;: &quot;letter&quot;,
+      &quot;folders&quot;: {
+        &quot;pattern&quot;: &quot;велика перша літера імені&quot;,
+        &quot;digits&quot;: &quot;0-9&quot;,
+        &quot;fallback&quot;: &quot;other — якщо перший символ не літера й не цифра&quot;
+      },
+      &quot;extensions&quot;: [
+        &quot;.jpg&quot;,
+        &quot;.png&quot;,
+        &quot;.csv&quot;,
+        &quot;.txt&quot;
+      ],
+      &quot;note&quot;: &quot;правило задає лише теку призначення — імена файлів не змінюються&quot;
+    },
+    &quot;thumbs&quot;: {
+      &quot;box&quot;: [
+        200,
+        200
+      ],
+      &quot;format&quot;: &quot;JPEG&quot;,
+      &quot;quality&quot;: 90,
+      &quot;note&quot;: &quot;вписати у квадрат зі збереженням пропорцій; окрема тека призначення&quot;
+    },
+    &quot;watermark&quot;: {
+      &quot;text&quot;: &quot;© PY-C2Q · 2026&quot;,
+      &quot;position&quot;: &quot;по центру кадру&quot;,
+      &quot;anchor&quot;: &quot;center&quot;,
+      &quot;note&quot;: &quot;кегль — ширина кадру // 20, не менший за 12 px; альфа ≈ 140; відступ 12 px&quot;
+    },
+    &quot;excel&quot;: {
+      &quot;sheets&quot;: [
+        {
+          &quot;name&quot;: &quot;Файли&quot;,
+          &quot;columns&quot;: [
+            &quot;Ім&#x27;я файлу&quot;,
+            &quot;Розширення&quot;,
+            &quot;Розмір, КіБ&quot;,
+            &quot;Тека призначення&quot;
+          ]
+        },
+        {
+          &quot;name&quot;: &quot;Дублікати&quot;,
+          &quot;columns&quot;: [
+            &quot;Хеш (перші 8 символів)&quot;,
+            &quot;Копій&quot;,
+            &quot;Марно займають, КіБ&quot;
+          ]
+        }
+      ],
+      &quot;formula&quot;: {
+        &quot;function&quot;: &quot;AVERAGE&quot;,
+        &quot;column&quot;: &quot;Розмір, КіБ&quot;,
+        &quot;text&quot;: &quot;середній розмір файлу&quot;,
+        &quot;sheet&quot;: &quot;Файли&quot;
+      },
+      &quot;note&quot;: &quot;openpyxl формул не обчислює — він записує лише їхній текст&quot;
+    }
+  }
+}</pre><p>Виконання локальне за погодженням. Публікацію на GitHub виконує власник; URL ще не надано, тому QR-код на неіснуюче посилання не створювався. Після публікації параметр --url створює QR-код.</p><pre>{
+  &quot;Python&quot;: &quot;3.12.10&quot;,
+  &quot;numpy&quot;: &quot;2.5.3&quot;,
+  &quot;Pillow&quot;: &quot;12.2.0&quot;,
+  &quot;openpyxl&quot;: &quot;3.1.5&quot;,
+  &quot;qrcode&quot;: &quot;8.2&quot;
+}</pre>
+<h2>2. Тестова тека та аудиторна частина</h2><p>Тестові дані згенеровано за схемою завдання: 23 файли, 14 зображень, підтеки camera та docs. Градієнти є синтетичними навчальними зображеннями, а координати в EXIF — даними генератора. Початкові файли збережено в test_folder.</p><p>Інвентаризація з -v показала 9 JPG, 3 PNG, 3 CSV, 2 TXT, 2 MD, 2 WEBP, 1 ZIP та 1 файл без розширення. Сумарний розмір — 550,514 КиБ. Перед хешуванням файли згруповано за розміром; SHA-256 читає блоки по 1 МіБ.</p><p><strong>Хеш пораховано для 9 файлів із 23.</strong> Знайдено 2 групи дублікатів; зайві копії займають 133.997 КиБ.</p><table><thead><tr><th>SHA-256 (8 символів)</th><th>Файли</th><th>Копій</th><th>Марно, КиБ</th></tr></thead><tbody><tr><td>908f1185</td><td>camera/IMG_0002 (1).jpg, camera/IMG_0002.jpg, kopiya_foto.jpg</td><td>3</td><td>133.951</td></tr><tr><td>d5ec4d6a</td><td>docs/notes_final.txt, notes.txt</td><td>2</td><td>0.046</td></tr></tbody></table><p>Чотири додатково хешовані файли мають однакові розміри, але різний вміст; сам розмір не доводить дублювання.</p>
+<h2>3. Розкладання файлів</h2><p>Для .jpg, .png, .csv та .txt обирається тека за першою літерою імені у верхньому регістрі. Цифри потрапляють у 0-9, решта символів — у other. Імена файлів не змінюються. Обрано копіювання зі збереженням оригіналів. Наявний файл із тим самим хешем пропускається; однойменний файл з іншим вмістом фіксується як конфлікт і не перезаписується.</p><p>У цьому наборі відібрано 17 файлів; 6 файлів з іншими розширеннями пропущено з записом у журнал. Гілки 0-9 та other перевірено окремими тимчасовими прикладами.</p><table><thead><tr><th>Ім&#x27;я файлу</th><th>Розширення</th><th>Розмір, КіБ</th><th>Тека призначення</th></tr></thead><tbody><tr><td>IMG_0001.jpg</td><td>.jpg</td><td>60.411</td><td>I</td></tr><tr><td>IMG_0002 (1).jpg</td><td>.jpg</td><td>66.976</td><td>I</td></tr><tr><td>IMG_0002.jpg</td><td>.jpg</td><td>66.976</td><td>I</td></tr><tr><td>IMG_0003.jpg</td><td>.jpg</td><td>85.774</td><td>I</td></tr><tr><td>IMG_0004.jpg</td><td>.jpg</td><td>33.327</td><td>I</td></tr><tr><td>IMG_0005.jpg</td><td>.jpg</td><td>44.496</td><td>I</td></tr><tr><td>IMG_0006.jpg</td><td>.jpg</td><td>56.401</td><td>I</td></tr><tr><td>photo_exif.jpg</td><td>.jpg</td><td>48.634</td><td>P</td></tr><tr><td>chart_01.png</td><td>.png</td><td>2.117</td><td>C</td></tr><tr><td>chart_02.png</td><td>.png</td><td>2.116</td><td>C</td></tr><tr><td>chart_03.png</td><td>.png</td><td>2.116</td><td>C</td></tr><tr><td>data_2025.csv</td><td>.csv</td><td>0.024</td><td>D</td></tr><tr><td>data_2026.csv</td><td>.csv</td><td>0.024</td><td>D</td></tr><tr><td>notes_final.txt</td><td>.txt</td><td>0.046</td><td>N</td></tr><tr><td>kopiya_foto.jpg</td><td>.jpg</td><td>66.976</td><td>K</td></tr><tr><td>notes.txt</td><td>.txt</td><td>0.046</td><td>N</td></tr><tr><td>дані.csv</td><td>.csv</td><td>0.032</td><td>Д</td></tr></tbody></table><h3>Команди виконання</h3><pre>python main.py --init-demo
+python main.py --dry-run -v
+python main.py -v
+python main.py -v</pre><p>--init-demo потрібний тільки для нової порожньої теки; комплектний test_folder уже створено. --dry-run записує журнал, але не змінює вхідні файли, не створює копій, мініатюр або Excel.</p><h3>Довідка --help</h3><pre>usage: main.py [-h] [-o OUTPUT] [--results RESULTS] [--ext EXT [EXT ...]]
+               [--log LOG] [-v] [--dry-run] [--scan-only] [--init-demo]
+               [--url URL]
+               [source]
+
+Розкладання файлів та обробка зображень: PY-C2Q / PR05-C5U
+
+positional arguments:
+  source                Вхідна тека
+
+options:
+  -h, --help            show this help message and exit
+  -o OUTPUT, --output OUTPUT
+                        Тека копій поза source
+  --results RESULTS     Тека звітів та мініатюр
+  --ext EXT [EXT ...]   Розширення через пробіл
+  --log LOG             Файл журналу UTF-8
+  -v, --verbose         Показувати пропущені розширення
+  --dry-run             Лише план; не копіювати й не обробляти файли
+  --scan-only           Лише інвентаризація й дублікати
+  --init-demo           Створити тестову теку; не замінювати наявні файли
+  --url URL             Посилання на опубліковану роботу для QR-коду
+</pre>
+<h2>4. Доказ ідемпотентності</h2><table><thead><tr><th>Запуск</th><th>Скопійовано</th><th>Пропущено</th><th>Конфліктів</th><th>Помилок</th></tr></thead><tbody><tr><td>1</td><td>17</td><td>0</td><td>0</td><td>0</td></tr><tr><td>2</td><td>0</td><td>17</td><td>0</td><td>0</td></tr></tbody></table><p>Другий запуск безпечний завдяки перевірці бажаного кінцевого стану: файл із тим самим іменем і SHA-256 уже існує, тому повторне копіювання не виконується.</p><h3>Єдиний журнал: dry-run та обидва справжні запуски</h3><pre>2026-11-09 21:28:04 | INFO | старт: source=D:\програмування алгоритив\lab-04\work-04\test_folder, out=D:\програмування алгоритив\lab-04\work-04\results\sorted, dry_run=True
+2026-11-09 21:28:04 | DEBUG | пропущено розширення: backup.zip
+2026-11-09 21:28:04 | DEBUG | пропущено розширення: docs\plan.md
+2026-11-09 21:28:04 | DEBUG | пропущено розширення: docs\README.md
+2026-11-09 21:28:04 | DEBUG | пропущено розширення: docs\scan_01.webp
+2026-11-09 21:28:04 | DEBUG | пропущено розширення: docs\scan_02.webp
+2026-11-09 21:28:04 | DEBUG | пропущено розширення: LICENSE
+2026-11-09 21:28:04 | INFO | файлів: 23; розмір: 550.514 КіБ; за розширеннями: {&#x27;.zip&#x27;: 1, &#x27;.jpg&#x27;: 9, &#x27;.png&#x27;: 3, &#x27;.csv&#x27;: 3, &#x27;.txt&#x27;: 2, &#x27;.md&#x27;: 2, &#x27;.webp&#x27;: 2, &#x27;(без розширення)&#x27;: 1}
+2026-11-09 21:28:04 | INFO | дублікати 908f1185: camera/IMG_0002 (1).jpg, camera/IMG_0002.jpg, kopiya_foto.jpg
+2026-11-09 21:28:04 | INFO | дублікати d5ec4d6a: docs/notes_final.txt, notes.txt
+2026-11-09 21:28:04 | INFO | хеш пораховано для 9 файлів із 23
+2026-11-09 21:28:04 | INFO | [dry-run] IMG_0001.jpg -&gt; I
+2026-11-09 21:28:04 | INFO | [dry-run] IMG_0002 (1).jpg -&gt; I
+2026-11-09 21:28:04 | INFO | [dry-run] IMG_0002.jpg -&gt; I
+2026-11-09 21:28:04 | INFO | [dry-run] IMG_0003.jpg -&gt; I
+2026-11-09 21:28:04 | INFO | [dry-run] IMG_0004.jpg -&gt; I
+2026-11-09 21:28:04 | INFO | [dry-run] IMG_0005.jpg -&gt; I
+2026-11-09 21:28:04 | INFO | [dry-run] IMG_0006.jpg -&gt; I
+2026-11-09 21:28:04 | INFO | [dry-run] photo_exif.jpg -&gt; P
+2026-11-09 21:28:04 | INFO | [dry-run] chart_01.png -&gt; C
+2026-11-09 21:28:04 | INFO | [dry-run] chart_02.png -&gt; C
+2026-11-09 21:28:04 | INFO | [dry-run] chart_03.png -&gt; C
+2026-11-09 21:28:04 | INFO | [dry-run] data_2025.csv -&gt; D
+2026-11-09 21:28:04 | INFO | [dry-run] data_2026.csv -&gt; D
+2026-11-09 21:28:04 | INFO | [dry-run] notes_final.txt -&gt; N
+2026-11-09 21:28:04 | INFO | [dry-run] kopiya_foto.jpg -&gt; K
+2026-11-09 21:28:04 | INFO | [dry-run] notes.txt -&gt; N
+2026-11-09 21:28:04 | INFO | [dry-run] дані.csv -&gt; Д
+2026-11-09 21:28:04 | INFO | підсумок розкладання: {&#x27;copied&#x27;: 0, &#x27;skipped&#x27;: 0, &#x27;planned&#x27;: 17, &#x27;conflicts&#x27;: 0, &#x27;failed&#x27;: 0}
+2026-11-09 21:28:14 | INFO | старт: source=D:\програмування алгоритив\lab-04\work-04\test_folder, out=D:\програмування алгоритив\lab-04\work-04\results\sorted, dry_run=False
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: backup.zip
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: docs\plan.md
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: docs\README.md
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: docs\scan_01.webp
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: docs\scan_02.webp
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: LICENSE
+2026-11-09 21:28:14 | INFO | файлів: 23; розмір: 550.514 КіБ; за розширеннями: {&#x27;.zip&#x27;: 1, &#x27;.jpg&#x27;: 9, &#x27;.png&#x27;: 3, &#x27;.csv&#x27;: 3, &#x27;.txt&#x27;: 2, &#x27;.md&#x27;: 2, &#x27;.webp&#x27;: 2, &#x27;(без розширення)&#x27;: 1}
+2026-11-09 21:28:14 | INFO | дублікати 908f1185: camera/IMG_0002 (1).jpg, camera/IMG_0002.jpg, kopiya_foto.jpg
+2026-11-09 21:28:14 | INFO | дублікати d5ec4d6a: docs/notes_final.txt, notes.txt
+2026-11-09 21:28:14 | INFO | хеш пораховано для 9 файлів із 23
+2026-11-09 21:28:14 | INFO | скопійовано: IMG_0001.jpg -&gt; I
+2026-11-09 21:28:14 | INFO | скопійовано: IMG_0002 (1).jpg -&gt; I
+2026-11-09 21:28:14 | INFO | скопійовано: IMG_0002.jpg -&gt; I
+2026-11-09 21:28:14 | INFO | скопійовано: IMG_0003.jpg -&gt; I
+2026-11-09 21:28:14 | INFO | скопійовано: IMG_0004.jpg -&gt; I
+2026-11-09 21:28:14 | INFO | скопійовано: IMG_0005.jpg -&gt; I
+2026-11-09 21:28:14 | INFO | скопійовано: IMG_0006.jpg -&gt; I
+2026-11-09 21:28:14 | INFO | скопійовано: photo_exif.jpg -&gt; P
+2026-11-09 21:28:14 | INFO | скопійовано: chart_01.png -&gt; C
+2026-11-09 21:28:14 | INFO | скопійовано: chart_02.png -&gt; C
+2026-11-09 21:28:14 | INFO | скопійовано: chart_03.png -&gt; C
+2026-11-09 21:28:14 | INFO | скопійовано: data_2025.csv -&gt; D
+2026-11-09 21:28:14 | INFO | скопійовано: data_2026.csv -&gt; D
+2026-11-09 21:28:14 | INFO | скопійовано: notes_final.txt -&gt; N
+2026-11-09 21:28:14 | INFO | скопійовано: kopiya_foto.jpg -&gt; K
+2026-11-09 21:28:14 | INFO | скопійовано: notes.txt -&gt; N
+2026-11-09 21:28:14 | INFO | скопійовано: дані.csv -&gt; Д
+2026-11-09 21:28:14 | INFO | підсумок розкладання: {&#x27;copied&#x27;: 17, &#x27;skipped&#x27;: 0, &#x27;planned&#x27;: 0, &#x27;conflicts&#x27;: 0, &#x27;failed&#x27;: 0}
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: backup.zip
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: data_2025.csv
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: data_2026.csv
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: docs\notes_final.txt
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: docs\plan.md
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: docs\README.md
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: LICENSE
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: notes.txt
+2026-11-09 21:28:14 | DEBUG | пропущено розширення: дані.csv
+2026-11-09 21:28:15 | INFO | мініатюри: {&#x27;done&#x27;: 14, &#x27;skipped&#x27;: 0, &#x27;failed&#x27;: 0}
+2026-11-09 21:28:15 | INFO | Excel: =AVERAGE(C2:C18); середній розмір: 31.558421 КіБ
+2026-11-09 21:28:15 | INFO | завершено
+2026-11-09 21:28:15 | INFO | старт: source=D:\програмування алгоритив\lab-04\work-04\test_folder, out=D:\програмування алгоритив\lab-04\work-04\results\sorted, dry_run=False
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: backup.zip
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: docs\plan.md
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: docs\README.md
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: docs\scan_01.webp
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: docs\scan_02.webp
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: LICENSE
+2026-11-09 21:28:15 | INFO | файлів: 23; розмір: 550.514 КіБ; за розширеннями: {&#x27;.zip&#x27;: 1, &#x27;.jpg&#x27;: 9, &#x27;.png&#x27;: 3, &#x27;.csv&#x27;: 3, &#x27;.txt&#x27;: 2, &#x27;.md&#x27;: 2, &#x27;.webp&#x27;: 2, &#x27;(без розширення)&#x27;: 1}
+2026-11-09 21:28:15 | INFO | дублікати 908f1185: camera/IMG_0002 (1).jpg, camera/IMG_0002.jpg, kopiya_foto.jpg
+2026-11-09 21:28:15 | INFO | дублікати d5ec4d6a: docs/notes_final.txt, notes.txt
+2026-11-09 21:28:15 | INFO | хеш пораховано для 9 файлів із 23
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\I\IMG_0001.jpg
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\I\IMG_0002 (1).jpg
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\I\IMG_0002.jpg
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\I\IMG_0003.jpg
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\I\IMG_0004.jpg
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\I\IMG_0005.jpg
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\I\IMG_0006.jpg
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\P\photo_exif.jpg
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\C\chart_01.png
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\C\chart_02.png
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\C\chart_03.png
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\D\data_2025.csv
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\D\data_2026.csv
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\N\notes_final.txt
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\K\kopiya_foto.jpg
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\N\notes.txt
+2026-11-09 21:28:15 | INFO | вже є той самий вміст: D:\програмування алгоритив\lab-04\work-04\results\sorted\Д\дані.csv
+2026-11-09 21:28:15 | INFO | підсумок розкладання: {&#x27;copied&#x27;: 0, &#x27;skipped&#x27;: 17, &#x27;planned&#x27;: 0, &#x27;conflicts&#x27;: 0, &#x27;failed&#x27;: 0}
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: backup.zip
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: data_2025.csv
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: data_2026.csv
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: docs\notes_final.txt
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: docs\plan.md
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: docs\README.md
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: LICENSE
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: notes.txt
+2026-11-09 21:28:15 | DEBUG | пропущено розширення: дані.csv
+2026-11-09 21:28:15 | INFO | мініатюра вже є: camera\IMG_0001.jpg
+2026-11-09 21:28:15 | INFO | мініатюра вже є: camera\IMG_0002 (1).jpg
+2026-11-09 21:28:15 | INFO | мініатюра вже є: camera\IMG_0002.jpg
+2026-11-09 21:28:15 | INFO | мініатюра вже є: camera\IMG_0003.jpg
+2026-11-09 21:28:15 | INFO | мініатюра вже є: camera\IMG_0004.jpg
+2026-11-09 21:28:15 | INFO | мініатюра вже є: camera\IMG_0005.jpg
+2026-11-09 21:28:15 | INFO | мініатюра вже є: camera\IMG_0006.jpg
+2026-11-09 21:28:15 | INFO | мініатюра вже є: camera\photo_exif.jpg
+2026-11-09 21:28:15 | INFO | мініатюра вже є: chart_01.png
+2026-11-09 21:28:15 | INFO | мініатюра вже є: chart_02.png
+2026-11-09 21:28:15 | INFO | мініатюра вже є: chart_03.png
+2026-11-09 21:28:15 | INFO | мініатюра вже є: docs\scan_01.webp
+2026-11-09 21:28:15 | INFO | мініатюра вже є: docs\scan_02.webp
+2026-11-09 21:28:16 | INFO | мініатюра вже є: kopiya_foto.jpg
+2026-11-09 21:28:16 | INFO | мініатюри: {&#x27;done&#x27;: 0, &#x27;skipped&#x27;: 14, &#x27;failed&#x27;: 0}
+2026-11-09 21:28:16 | INFO | Excel: =AVERAGE(C2:C18); середній розмір: 31.558421 КіБ
+2026-11-09 21:28:16 | INFO | завершено
+</pre><p>Окремі знімки чисел: <a href="results/run-1.json">перший запуск</a> та <a href="results/run-2.json">другий запуск</a>. Журнал використовує RotatingFileHandler, UTF-8, ліміт 1 МБ та три резервні файли.</p>
+<h2>5. Пакетна обробка зображень</h2><table><thead><tr><th>Запуск</th><th>Оброблено</th><th>Пропущено</th><th>Помилок</th></tr></thead><tbody><tr><td>1</td><td>14</td><td>0</td><td>0</td></tr><tr><td>2</td><td>0</td><td>14</td><td>0</td></tr></tbody></table><p>Оброблено всі 14 зображень, включно з WEBP: обмеження розширень картки стосується розкладання файлів, а не джерела мініатюр. ImageOps.exif_transpose виправляє орієнтацію; thumbnail вписує кадр у 200×200 зі збереженням пропорцій. Формат JPEG, quality=90, перетворення RGB перед записом.</p><p>Водяний знак «© PY-C2Q · 2026» розташовано по центру за textbbox, на окремому RGBA-шарі з альфою 140. Кегль max(12, ширина // 20). Для центрального положення відступ від країв не застосовується. Підтеки та початкове розширення входять у шлях мініатюри, тому однойменні джерела не затираються.</p><figure><img src="results/thumbnails/camera/IMG_0001.jpg.jpg" alt="Мініатюра з центральним водяним знаком"><figcaption>Мініатюра 200×125, водяний знак у центрі.</figcaption></figure><table><thead><tr><th>Джерело</th><th>До, px</th><th>Після, px</th><th>Розмір JPEG, байт</th></tr></thead><tbody><tr><td>camera/IMG_0001.jpg</td><td>1600 × 1000</td><td>200 × 125</td><td>3540</td></tr><tr><td>camera/IMG_0002 (1).jpg</td><td>1200 × 1600</td><td>150 × 200</td><td>3836</td></tr><tr><td>camera/IMG_0002.jpg</td><td>1200 × 1600</td><td>150 × 200</td><td>3836</td></tr><tr><td>camera/IMG_0003.jpg</td><td>2000 × 1200</td><td>200 × 120</td><td>3514</td></tr><tr><td>camera/IMG_0004.jpg</td><td>900 × 900</td><td>200 × 200</td><td>4437</td></tr><tr><td>camera/IMG_0005.jpg</td><td>1400 × 800</td><td>200 × 114</td><td>3516</td></tr><tr><td>camera/IMG_0006.jpg</td><td>1000 × 1500</td><td>133 × 200</td><td>3601</td></tr><tr><td>camera/photo_exif.jpg</td><td>1200 × 900</td><td>200 × 150</td><td>3987</td></tr><tr><td>chart_01.png</td><td>800 × 500</td><td>200 × 125</td><td>3545</td></tr><tr><td>chart_02.png</td><td>800 × 500</td><td>200 × 125</td><td>3529</td></tr><tr><td>chart_03.png</td><td>800 × 500</td><td>200 × 125</td><td>3514</td></tr><tr><td>docs/scan_01.webp</td><td>1100 × 700</td><td>200 × 127</td><td>3752</td></tr><tr><td>docs/scan_02.webp</td><td>1100 × 700</td><td>200 × 127</td><td>3749</td></tr><tr><td>kopiya_foto.jpg</td><td>1200 × 1600</td><td>150 × 200</td><td>3836</td></tr></tbody></table>
+<h2>6. EXIF до й після очищення</h2><p>Досліджено тестовий camera/photo_exif.jpg. Це зображення генератора, не особиста фотографія.</p><pre>{
+  &quot;GPSInfo&quot;: &quot;142&quot;,
+  &quot;Make&quot;: &quot;ISTU&quot;,
+  &quot;Model&quot;: &quot;Colab Phone X&quot;,
+  &quot;Software&quot;: &quot;pr05-generator&quot;,
+  &quot;Orientation&quot;: &quot;1&quot;,
+  &quot;DateTime&quot;: &quot;2026:03:14 09:15:00&quot;
+}</pre><h3>Геодані</h3><pre>{
+  &quot;GPSLatitudeRef&quot;: &quot;N&quot;,
+  &quot;GPSLatitude&quot;: &quot;(50.0, 27.0, 12.0)&quot;,
+  &quot;GPSLongitudeRef&quot;: &quot;E&quot;,
+  &quot;GPSLongitude&quot;: &quot;(30.0, 31.0, 24.0)&quot;
+}</pre><p>Геокоординати є: 50,4533333° N, 30,5233333° E. <a href="https://www.google.com/maps?q=50.4533333,30.5233333">Показати координати генератора на карті</a>.</p><p>Перерахунок: градуси + хвилини / 60 + секунди / 3600; для S і W знак від'ємний. Спочатку застосовано exif_transpose, потім нове зображення створено виключно з пікселів.</p><table><thead><tr><th>len(getexif()) до</th><th>len(getexif()) після</th></tr></thead><tbody><tr><td>6</td><td>0</td></tr></tbody></table><p><a href="results/photo_clean.jpg">Фото без EXIF</a>. Перевірку виконано повторним відкриттям збереженого JPEG.</p>
+<h2>7. Excel-звіт</h2><p><a href="results/files.xlsx">Завантажити книгу Excel</a>. Аркуш «Файли» містить 17 відібраних джерел; «Дублікати» — дві групи з повної тестової теки. Заголовки виділено кольором і жирним шрифтом, ширини розраховано за вмістом, перший рядок закріплено A2.</p><p>У C19 записано формулу <code>=AVERAGE(C2:C18)</code>. Незалежний результат Python: 31.558421415 КиБ, відображення — 31,56 КиБ. Обчислення формули під час перевірки книги збіглося з Python. openpyxl записує формулу без кешованого значення: у файлі вона обчислюється після відкриття в Excel або LibreOffice.</p><figure><img src="results/files-sheet.png" alt="Аркуш Файли"><figcaption>Візуалізація збереженого аркуша «Файли» з обчисленим підсумковим рядком C19.</figcaption></figure><figure><img src="results/duplicates-sheet.png" alt="Аркуш Дублікати"><figcaption>Візуалізація другого аркуша. Зайве місце = (кількість копій − 1) × розмір одного файлу.</figcaption></figure>
+<h2>8. Повний скрипт</h2><p><a href="main.py">main.py</a> містить увесь код завдання. Імпорт не запускає дії та не додає обробники журналу.</p><pre>&quot;&quot;&quot;Автоматизація файлів: PY-C2Q / PR05-C5U (тека лабораторної №4).&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import logging
+import os
+import shutil
+import sys
+import zipfile
+from collections import Counter, defaultdict
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+
+import numpy as np
+from PIL import ExifTags, Image, ImageDraw, ImageFont, ImageOps, UnidentifiedImageError
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
+
+BASE = Path(__file__).resolve().parent
+EXTENSIONS = {&quot;.jpg&quot;, &quot;.png&quot;, &quot;.csv&quot;, &quot;.txt&quot;}
+IMAGE_EXTENSIONS = {&quot;.jpg&quot;, &quot;.jpeg&quot;, &quot;.png&quot;, &quot;.webp&quot;}
+log = logging.getLogger(&quot;pr05&quot;)
+
+
+def setup_logging(path: Path, verbose: bool) -&gt; None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    log.setLevel(logging.DEBUG)
+    for handler in log.handlers[:]:
+        handler.close(); log.removeHandler(handler)
+    log.propagate = False
+    formatter = logging.Formatter(&quot;%(asctime)s | %(levelname)s | %(message)s&quot;, &quot;%Y-%m-%d %H:%M:%S&quot;)
+    file_handler = RotatingFileHandler(path, maxBytes=1_000_000, backupCount=3, encoding=&quot;utf-8&quot;)
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setLevel(logging.DEBUG if verbose else logging.INFO)
+    for handler in (file_handler, stream_handler):
+        handler.setFormatter(formatter); log.addHandler(handler)
+
+
+def scan(source: Path, extensions: set[str] | None = None) -&gt; list[Path]:
+    files = []
+    for path in sorted(source.rglob(&quot;*&quot;)):
+        # Символічні посилання не повинні виводити обхід за межі вхідної теки.
+        if path.is_symlink() or not path.is_file() or not path.resolve().is_relative_to(source.resolve()):
+            continue
+        if extensions is not None and path.suffix.lower() not in extensions:
+            log.debug(&quot;пропущено розширення: %s&quot;, path.relative_to(source))
+            continue
+        files.append(path)
+    return files
+
+
+def file_hash(path: Path) -&gt; str:
+    digest = hashlib.sha256()
+    with path.open(&quot;rb&quot;) as stream:
+        while block := stream.read(1 &lt;&lt; 20):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def find_duplicates(files: list[Path]) -&gt; tuple[list[tuple[str, list[Path]]], int]:
+    by_size = defaultdict(list)
+    for path in files:
+        by_size[path.stat().st_size].append(path)
+    by_hash = defaultdict(list)
+    hashed = 0
+    # Однаковий вміст має однаковий розмір; унікальні розміри не хешуємо.
+    for group in by_size.values():
+        if len(group) &lt; 2:
+            continue
+        for path in group:
+            by_hash[file_hash(path)].append(path); hashed += 1
+    return [(digest, paths) for digest, paths in sorted(by_hash.items()) if len(paths) &gt; 1], hashed
+
+
+def destination(path: Path, output: Path) -&gt; Path:
+    first = path.name[0]
+    folder = first.upper() if first.isalpha() else &quot;0-9&quot; if first.isdigit() else &quot;other&quot;
+    return output / folder
+
+
+def validate_output(source: Path, output: Path) -&gt; None:
+    if output.resolve().is_relative_to(source.resolve()):
+        raise ValueError(&quot;Тека результатів має бути поза вхідною текою&quot;)
+
+
+def organize(files: list[Path], output: Path, dry_run: bool) -&gt; dict:
+    counts = Counter(copied=0, skipped=0, planned=0, conflicts=0, failed=0)
+    for source in files:
+        target = destination(source, output) / source.name
+        if target.exists():
+            if target.is_file() and file_hash(source) == file_hash(target):
+                counts[&quot;skipped&quot;] += 1
+                log.info(&quot;вже є той самий вміст: %s&quot;, target)
+            else:
+                # Картка забороняє змінювати імена; колізії не перезаписуємо.
+                counts[&quot;conflicts&quot;] += 1
+                log.warning(&quot;конфлікт імені, файл збережено без змін: %s&quot;, target)
+            continue
+        if dry_run:
+            counts[&quot;planned&quot;] += 1
+            log.info(&quot;[dry-run] %s -&gt; %s&quot;, source.name, target.parent.name)
+            continue
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            # Ексклюзивне створення захищає від перезапису навіть при колізії між перевіркою і записом.
+            with source.open(&quot;rb&quot;) as src, target.open(&quot;xb&quot;) as dst:
+                shutil.copyfileobj(src, dst, length=1 &lt;&lt; 20)
+            shutil.copystat(source, target)
+            counts[&quot;copied&quot;] += 1
+            log.info(&quot;скопійовано: %s -&gt; %s&quot;, source.name, target.parent.name)
+        except OSError as exc:
+            counts[&quot;failed&quot;] += 1; log.error(&quot;не вдалося скопіювати %s: %s&quot;, source, exc)
+    log.info(&quot;підсумок розкладання: %s&quot;, dict(counts))
+    return dict(counts)
+
+
+def font_path() -&gt; str:
+    paths = [BASE / &quot;resources/DejaVuSans.ttf&quot;, Path(&quot;C:/Windows/Fonts/arial.ttf&quot;), Path(&quot;/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf&quot;)]
+    for path in paths:
+        if path.exists():
+            return str(path)
+    raise FileNotFoundError(&quot;Не знайдено шрифт із кирилицею&quot;)
+
+
+def process_images(source: Path, output: Path) -&gt; tuple[dict, list[dict]]:
+    validate_output(source, output)
+    counts = Counter(done=0, skipped=0, failed=0)
+    rows = []
+    for path in scan(source, IMAGE_EXTENSIONS):
+        # Зберігаємо підтеки й початкове розширення в імені: a.png та a.jpg не зіткнуться.
+        relative = path.relative_to(source)
+        target = output / relative.parent / (relative.name + &quot;.jpg&quot;)
+        try:
+            with Image.open(path) as original:
+                image = ImageOps.exif_transpose(original).convert(&quot;RGBA&quot;)
+                before = image.size
+                image.thumbnail((200, 200), Image.Resampling.LANCZOS)
+                if target.exists():
+                    counts[&quot;skipped&quot;] += 1
+                    log.info(&quot;мініатюра вже є: %s&quot;, relative)
+                else:
+                    layer = Image.new(&quot;RGBA&quot;, image.size, (0, 0, 0, 0))
+                    draw = ImageDraw.Draw(layer)
+                    font = ImageFont.truetype(font_path(), max(12, image.width // 20))
+                    text = &quot;© PY-C2Q · 2026&quot;
+                    left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
+                    x = (image.width - (right-left))/2-left
+                    y = (image.height - (bottom-top))/2-top
+                    draw.text((x, y), text, font=font, fill=(255, 255, 255, 140))
+                    result = Image.alpha_composite(image, layer).convert(&quot;RGB&quot;)
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    with target.open(&quot;xb&quot;) as stream:
+                        result.save(stream, &quot;JPEG&quot;, quality=90)
+                    counts[&quot;done&quot;] += 1
+                rows.append({&quot;source&quot;: relative.as_posix(), &quot;before&quot;: list(before), &quot;after&quot;: list(image.size), &quot;bytes&quot;: target.stat().st_size})
+        except (UnidentifiedImageError, OSError, ValueError) as exc:
+            counts[&quot;failed&quot;] += 1; log.warning(&quot;помилка зображення %s: %s&quot;, relative, exc)
+    log.info(&quot;мініатюри: %s&quot;, dict(counts))
+    return dict(counts), rows
+
+
+def inspect_exif(source: Path, target: Path) -&gt; dict:
+    with Image.open(source) as original:
+        exif = original.getexif()
+        tags = {ExifTags.TAGS.get(key, str(key)): str(value) for key, value in exif.items()}
+        gps = exif.get_ifd(ExifTags.IFD.GPSInfo)
+        result = {&quot;before&quot;: len(exif), &quot;tags&quot;: tags, &quot;gps_present&quot;: bool(gps), &quot;gps_tags&quot;: {ExifTags.GPSTAGS.get(k, str(k)): str(v) for k, v in gps.items()}}
+        if gps:
+            def degrees(values, hemisphere):
+                number = float(values[0])+float(values[1])/60+float(values[2])/3600
+                return -number if hemisphere in (&quot;S&quot;, &quot;W&quot;) else number
+            lat, lon = degrees(gps[2], gps[1]), degrees(gps[4], gps[3])
+            result.update(latitude=lat, longitude=lon, map_url=f&quot;https://www.google.com/maps?q={lat:.7f},{lon:.7f}&quot;)
+        # Орієнтацію виправляємо до вилучення EXIF, потім залишаємо лише пікселі.
+        oriented = ImageOps.exif_transpose(original).convert(&quot;RGB&quot;)
+        clean = Image.frombytes(&quot;RGB&quot;, oriented.size, oriented.tobytes())
+        target.parent.mkdir(parents=True, exist_ok=True)
+        clean.save(target, &quot;JPEG&quot;, quality=90)
+    with Image.open(target) as clean:
+        result[&quot;after&quot;] = len(clean.getexif())
+    return result
+
+
+def write_excel(files: list[Path], groups: list[tuple[str, list[Path]]], output: Path, path: Path) -&gt; dict:
+    workbook = Workbook()
+    sheet = workbook.active; sheet.title = &quot;Файли&quot;
+    sheet.append([&quot;Ім&#x27;я файлу&quot;, &quot;Розширення&quot;, &quot;Розмір, КіБ&quot;, &quot;Тека призначення&quot;])
+    for file in files:
+        sheet.append([file.name, file.suffix.lower(), file.stat().st_size/1024, destination(file, output).name])
+    last = sheet.max_row
+    sheet.append([&quot;Разом (середнє)&quot;, None, f&quot;=AVERAGE(C2:C{last})&quot; if files else None, None])
+    duplicates = workbook.create_sheet(&quot;Дублікати&quot;)
+    duplicates.append([&quot;Хеш (перші 8 символів)&quot;, &quot;Копій&quot;, &quot;Марно займають, КіБ&quot;])
+    for digest, group in groups:
+        duplicates.append([digest[:8], len(group), (len(group)-1)*group[0].stat().st_size/1024])
+    for current in workbook:
+        current.freeze_panes = &quot;A2&quot;
+        current.sheet_view.showGridLines = False
+        current.auto_filter.ref = f&quot;A1:{get_column_letter(current.max_column)}{last if current is sheet else current.max_row}&quot;
+        for cell in current[1]:
+            cell.font = Font(name=&quot;Arial&quot;, bold=True, color=&quot;FFFFFF&quot;, size=11)
+            cell.fill = PatternFill(&quot;solid&quot;, fgColor=&quot;244B70&quot;)
+            cell.alignment = Alignment(horizontal=&quot;center&quot;, vertical=&quot;center&quot;)
+        current.row_dimensions[1].height = 28
+        for row in current.iter_rows(min_row=2):
+            current.row_dimensions[row[0].row].height = 23
+            for cell in row:
+                cell.font = Font(name=&quot;Arial&quot;, size=11)
+                cell.alignment = Alignment(vertical=&quot;center&quot;)
+            row[2].number_format = &quot;0.00&quot;
+        for column in current.columns:
+            width = max(len(str(cell.value or &quot;&quot;)) for cell in column)+2
+            current.column_dimensions[column[0].column_letter].width = max(14, width)
+    for cell in sheet[sheet.max_row]:
+        cell.font = Font(name=&quot;Arial&quot;, bold=True, size=11)
+        cell.fill = PatternFill(&quot;solid&quot;, fgColor=&quot;E7EEF5&quot;)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    workbook.save(path)
+    return {&quot;rows&quot;: len(files), &quot;formula_cell&quot;: f&quot;C{last+1}&quot;, &quot;formula&quot;: sheet.cell(last+1, 3).value, &quot;python_average_kib&quot;: sum(p.stat().st_size/1024 for p in files)/len(files) if files else None}
+
+
+def build_test_folder(root: Path) -&gt; None:
+    if root.exists() and any(root.iterdir()):
+        raise FileExistsError(&quot;Тестова тека вже непорожня; використайте новий шлях&quot;)
+    (root / &quot;camera&quot;).mkdir(parents=True, exist_ok=True)
+    (root / &quot;docs&quot;).mkdir(exist_ok=True)
+    def image(w, h, seed):
+        rng = np.random.default_rng(seed)
+        arr = np.zeros((h, w, 3), dtype=np.float32)
+        arr[..., 0] = np.linspace(0, 255, w, dtype=np.float32)
+        arr[..., 1] = np.linspace(0, 255, h, dtype=np.float32)[:, None]
+        arr[..., 2] = rng.integers(40, 220)
+        return Image.fromarray(arr.astype(np.uint8))
+    def touch(path, date):
+        stamp = datetime.strptime(date, &quot;%Y-%m-%d&quot;).timestamp()
+        os.utime(path, (stamp, stamp))
+    sizes = [(1600,1000),(1200,1600),(2000,1200),(900,900),(1400,800),(1000,1500)]
+    dates = [&quot;2025-11-03&quot;,&quot;2025-11-27&quot;,&quot;2025-12-15&quot;,&quot;2026-01-09&quot;,&quot;2026-02-02&quot;,&quot;2026-02-21&quot;]
+    for i, ((w,h), date) in enumerate(zip(sizes, dates), 1):
+        path = root / &quot;camera&quot; / f&quot;IMG_{i:04d}.jpg&quot;
+        image(w,h,i).save(path, quality=88); touch(path,date)
+    for i,date in enumerate([&quot;2025-12-01&quot;,&quot;2026-01-20&quot;,&quot;2026-03-05&quot;],1):
+        path=root/f&quot;chart_{i:02d}.png&quot;; image(800,500,100+i).save(path,optimize=True); touch(path,date)
+    for i,date in enumerate([&quot;2026-01-31&quot;,&quot;2026-03-11&quot;],1):
+        path=root/&quot;docs&quot;/f&quot;scan_{i:02d}.webp&quot;; image(1100,700,200+i).save(path,quality=82); touch(path,date)
+    texts = {&quot;notes.txt&quot;:&quot;нотатки до практичного 05\n&quot;, &quot;docs/README.md&quot;:&quot;# Тестова тека\nстворено генератором ПР05\n&quot;, &quot;docs/plan.md&quot;:&quot;- розкласти\n- обробити\n- звіт\n&quot;, &quot;data_2025.csv&quot;:&quot;rik;znachennia\n2025;10\n&quot;, &quot;data_2026.csv&quot;:&quot;rik;znachennia\n2026;12\n&quot;, &quot;дані.csv&quot;:&quot;рік;значення\n2026;7\n&quot;, &quot;LICENSE&quot;:&quot;навчальний матеріал\n&quot;}
+    for (name,text),date in zip(texts.items(),[&quot;2025-11-03&quot;,&quot;2025-12-01&quot;,&quot;2026-01-09&quot;,&quot;2026-01-20&quot;,&quot;2026-02-02&quot;,&quot;2026-02-21&quot;,&quot;2026-03-05&quot;]):
+        path=root/name; path.write_text(text,encoding=&quot;utf-8&quot;); touch(path,date)
+    shutil.copy2(root/&quot;camera/IMG_0002.jpg&quot;, root/&quot;camera/IMG_0002 (1).jpg&quot;)
+    shutil.copy2(root/&quot;camera/IMG_0002.jpg&quot;, root/&quot;kopiya_foto.jpg&quot;)
+    shutil.copy2(root/&quot;notes.txt&quot;, root/&quot;docs/notes_final.txt&quot;)
+    with zipfile.ZipFile(root/&quot;backup.zip&quot;,&quot;w&quot;,zipfile.ZIP_DEFLATED) as archive:
+        archive.write(root/&quot;notes.txt&quot;,&quot;notes.txt&quot;)
+    touch(root/&quot;backup.zip&quot;,&quot;2026-02-02&quot;)
+    exif=Image.Exif()
+    exif[271],exif[272]=&quot;ISTU&quot;,&quot;Colab Phone X&quot;
+    exif[305],exif[306],exif[274]=&quot;pr05-generator&quot;,&quot;2026:03:14 09:15:00&quot;,1
+    exif.get_ifd(ExifTags.IFD.GPSInfo).update({1:&quot;N&quot;,2:(50.,27.,12.),3:&quot;E&quot;,4:(30.,31.,24.)})
+    image(1200,900,7).save(root/&quot;camera/photo_exif.jpg&quot;,quality=90,exif=exif)
+    touch(root/&quot;camera/photo_exif.jpg&quot;,&quot;2026-03-14&quot;)
+    print(f&quot;Створено {len(scan(root))} файли, з них {len(scan(root, IMAGE_EXTENSIONS))} зображень&quot;)
+
+
+def build_parser() -&gt; argparse.ArgumentParser:
+    parser=argparse.ArgumentParser(description=&quot;Розкладання файлів та обробка зображень: PY-C2Q / PR05-C5U&quot;)
+    parser.add_argument(&quot;source&quot;, type=Path, nargs=&quot;?&quot;, default=BASE/&quot;test_folder&quot;, help=&quot;Вхідна тека&quot;)
+    parser.add_argument(&quot;-o&quot;,&quot;--output&quot;,type=Path,default=BASE/&quot;results/sorted&quot;,help=&quot;Тека копій поза source&quot;)
+    parser.add_argument(&quot;--results&quot;,type=Path,default=BASE/&quot;results&quot;,help=&quot;Тека звітів та мініатюр&quot;)
+    parser.add_argument(&quot;--ext&quot;,nargs=&quot;+&quot;,default=sorted(EXTENSIONS),help=&quot;Розширення через пробіл&quot;)
+    parser.add_argument(&quot;--log&quot;,type=Path,default=BASE/&quot;results/tidy.log&quot;,help=&quot;Файл журналу UTF-8&quot;)
+    parser.add_argument(&quot;-v&quot;,&quot;--verbose&quot;,action=&quot;store_true&quot;,help=&quot;Показувати пропущені розширення&quot;)
+    parser.add_argument(&quot;--dry-run&quot;,action=&quot;store_true&quot;,help=&quot;Лише план; не копіювати й не обробляти файли&quot;)
+    parser.add_argument(&quot;--scan-only&quot;,action=&quot;store_true&quot;,help=&quot;Лише інвентаризація й дублікати&quot;)
+    parser.add_argument(&quot;--init-demo&quot;,action=&quot;store_true&quot;,help=&quot;Створити тестову теку; не замінювати наявні файли&quot;)
+    parser.add_argument(&quot;--url&quot;,help=&quot;Посилання на опубліковану роботу для QR-коду&quot;)
+    return parser
+
+
+def main() -&gt; None:
+    parser=build_parser(); args=parser.parse_args()
+    if args.init_demo:
+        build_test_folder(args.source); return
+    if not args.source.is_dir():
+        parser.error(&quot;Вхідна тека не існує&quot;)
+    try:
+        for path in [args.output, args.results, args.log.parent]:
+            validate_output(args.source,path)
+    except ValueError as exc:
+        parser.error(str(exc))
+    setup_logging(args.log,args.verbose)
+    log.info(&quot;старт: source=%s, out=%s, dry_run=%s&quot;,args.source,args.output,args.dry_run)
+    all_files=scan(args.source)
+    files=scan(args.source,{&#x27;.&#x27;+e.lower().lstrip(&#x27;.&#x27;) for e in args.ext})
+    groups,hashed=find_duplicates(all_files)
+    log.info(&quot;файлів: %s; розмір: %.3f КіБ; за розширеннями: %s&quot;,len(all_files),sum(p.stat().st_size for p in all_files)/1024,dict(Counter(p.suffix.lower() or &#x27;(без розширення)&#x27; for p in all_files)))
+    for digest,group in groups:
+        log.info(&quot;дублікати %s: %s&quot;,digest[:8],&#x27;, &#x27;.join(p.relative_to(args.source).as_posix() for p in group))
+    log.info(&quot;хеш пораховано для %s файлів із %s&quot;,hashed,len(all_files))
+    if args.scan_only:
+        return
+    organized=organize(files,args.output,args.dry_run)
+    if args.dry_run:
+        return
+    args.results.mkdir(parents=True,exist_ok=True)
+    image_counts,image_rows=process_images(args.source,args.results/&quot;thumbnails&quot;)
+    exif_source=args.source/&quot;camera/photo_exif.jpg&quot;
+    exif=inspect_exif(exif_source,args.results/&quot;photo_clean.jpg&quot;) if exif_source.exists() else None
+    excel=write_excel(files,groups,args.output,args.results/&quot;files.xlsx&quot;)
+    if args.url:
+        import qrcode
+        qrcode.make(args.url,border=4).save(args.results/&quot;qr.png&quot;)
+    summary={&quot;variant&quot;:&quot;PY-C2Q&quot;,&quot;labVariant&quot;:&quot;PR05-C5U&quot;,&quot;total_files&quot;:len(all_files),&quot;selected_files&quot;:len(files),&quot;hashed_files&quot;:hashed,&quot;duplicates&quot;:[{&quot;hash&quot;:d,&quot;files&quot;:[p.relative_to(args.source).as_posix() for p in g],&quot;wasted_kib&quot;:(len(g)-1)*g[0].stat().st_size/1024} for d,g in groups],&quot;organize&quot;:organized,&quot;images&quot;:image_counts,&quot;image_rows&quot;:image_rows,&quot;exif&quot;:exif,&quot;excel&quot;:excel}
+    (args.results/&quot;summary.json&quot;).write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding=&quot;utf-8&quot;)
+    log.info(&quot;Excel: %s; середній розмір: %.6f КіБ&quot;,excel[&quot;formula&quot;],excel[&quot;python_average_kib&quot;] or 0)
+    log.info(&quot;завершено&quot;)
+    if organized[&quot;conflicts&quot;] or organized[&quot;failed&quot;] or image_counts[&quot;failed&quot;]:
+        raise SystemExit(1)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</pre>
+<h2>9. Перевірки та висновки</h2><p>Перевірено: повторний запуск, збіг хешів кожної копії з оригіналом, колізія імен із різним вмістом, dry-run без створення копій, відхилення теки результатів усередині source, кирилиця/цифри/other, збереження однойменних зображень із різних підтек, продовження після пошкодженого JPEG, розміри всіх 14 мініатюр, обидва аркуші та формула Excel.</p><p>Порівняння хешів забезпечило повторний запуск без нових копій: 17 скопійовано спочатку і 17 пропущено повторно. Пакетна обробка створила 14 мініатюр без помилок, а очищення EXIF прибрало всі 6 тегів, включно з геоданими. Excel узагальнив фактичні результати й показав середній розмір відібраного файлу 31,56 КиБ.</p>
+<h2>10. Використання ШІ для звіту</h2><p>Для підготовки тексту та HTML-оформлення звіту використано ChatGPT (Codex). Числа взято з локальних запусків програми та перевірки створеної книги.</p></main></html>

@@ -1,0 +1,22 @@
+usage: main.py [-h] [-o OUTPUT] [--results RESULTS] [--ext EXT [EXT ...]]
+               [--log LOG] [-v] [--dry-run] [--scan-only] [--init-demo]
+               [--url URL]
+               [source]
+
+Розкладання файлів та обробка зображень: PY-C2Q / PR05-C5U
+
+positional arguments:
+  source                Вхідна тека
+
+options:
+  -h, --help            show this help message and exit
+  -o OUTPUT, --output OUTPUT
+                        Тека копій поза source
+  --results RESULTS     Тека звітів та мініатюр
+  --ext EXT [EXT ...]   Розширення через пробіл
+  --log LOG             Файл журналу UTF-8
+  -v, --verbose         Показувати пропущені розширення
+  --dry-run             Лише план; не копіювати й не обробляти файли
+  --scan-only           Лише інвентаризація й дублікати
+  --init-demo           Створити тестову теку; не замінювати наявні файли
+  --url URL             Посилання на опубліковану роботу для QR-коду
